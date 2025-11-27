@@ -22,7 +22,7 @@
 
         <el-menu-item index="/taskInfo">
             <i class="el-icon-menu"></i>
-             <span slot="title">待下载列表</span>
+             <span slot="title">下载队列</span>
             
         </el-menu-item>
 

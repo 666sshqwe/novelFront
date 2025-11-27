@@ -1,20 +1,28 @@
 <template>
   <el-container class="home-container">
     <!-- 侧边栏 -->
-    <el-menu default-active="1-4-1" class="el-menu-vertical-demo" defaultActive="/query" @open="handleOpen" @close="handleClose" :collapse="isCollapse" router>
-
-
-
-    <el-menu-item
-      v-for="item in menuList"
-      :key="item.index"
-      :index="item.path"
+  <!-- 侧边栏 -->
+  <el-aside :width="isCollapse ? '64px' : '260px'" class="sidebar-container">
+    <el-menu
+      default-active="1-4-1"
+      class="el-menu-vertical-demo"
+      @open="handleOpen"
+      @close="handleClose"
+      :collapse="isCollapse"
+      router
+      :unique-opened="true"
     >
-      <i :class="item.icon"></i>
-      <span slot="title">{{ item.title }}</span>
-    </el-menu-item>
-
+      <el-menu-item
+        v-for="item in menuList"
+        :key="item.index"
+        :index="item.path"
+        @click="handleMenuItemClick(item)"
+      >
+        <i :class="item.icon"></i>
+        <span slot="title">{{ item.title }}</span>
+      </el-menu-item>
     </el-menu>
+  </el-aside>
 
 
     <!-- 主体内容 -->
@@ -48,16 +56,7 @@
             <div slot="header" class="search-header">
                   <div class="title-row">
                       <h2 class="book-title">{{ bookName }}</h2>
-                      <el-button type="primary" size="small" @click="beginDownLoad">
-                        点击下载
-                      </el-button>
                   </div>
-
-                  <div class="meta-row">
-                    <h2>{{ author }}</h2>
-                    <h2>{{ updateTime }}</h2>
-                  </div>
-
                   <div class="description">
                     {{ description }}
                   </div>
@@ -89,6 +88,8 @@
 
       
     </el-container>
+
+
   </el-container>
 </template>
 
@@ -98,7 +99,205 @@ export default {
 };
 </script>
 
+
+<script>
+import axios from 'axios';
+
+  export default {
+    props: ['id'], 
+    data() {
+      return {
+        isCollapse: false,
+        bookName:"",
+        bookUrl:"",
+        bookId:"",
+        author: '',
+        updateTime: '',
+        description: '',
+        menuList: [],
+      
+      
+      // 当前章节索引
+      currentChapterIndex: 0,
+      
+      currentChapterTitle:"",
+      currentChapter:{},
+      // 阅读设置
+      settings: {
+        fontSize: 16,
+        lineHeight: '1.6',
+        bgColor: '#ffffff',
+        textColor: '#000000'
+      },
+      
+      // 对话框控制
+      settingsDialogVisible: false,
+      chapterListVisible: false
+              
+ 
+      };
+    },
+    methods: {
+            showNoteInfo(book) {
+              this.$message.success(`展示加入书架的书`)
+            },
+            handleOpen(key, keyPath) {
+              console.log(key, keyPath);
+            },
+            handleClose(key, keyPath) {
+              console.log(key, keyPath);
+            },
+            handleMenuItemClick(item) {
+              const chapterId = item.id;
+              this.loadChapterContent(chapterId);
+          
+            },
+
+            async loadNovelInfo() {
+              this.loading = true
+              try {
+                const response = await axios.get(`http://localhost:8899/download/getNovelInfo`, {
+                  params: { bookId: this.bookId},
+                  headers: {
+                              'Accept': 'application/json', // 明确指定接受JSON格式
+                              'Content-Type': 'application/json'
+                          }
+                })
+                if(response.data.data !=undefined && response.data.data.chapters !=undefined){
+                  //  { index: '1', title: '章节1', icon: 'el-icon-s-order',path: '/OnlineRead/1'},
+                  this.menuList = [];
+                  response.data.data.chapters.forEach((chapter, index) => {
+                    this.menuList.push({
+                      id: chapter.id,
+                      title: chapter.chaptName,
+                      order: chapter.chapterOrder,
+                      downloadId: chapter.downloadId,
+                      icon: 'el-icon-s-order'
+                    })
+                  })
+
+                }
+                this.loading = false  // 数据加载成功后设置loading为false
+              } catch (error) {
+                console.error(error)
+                this.$message.error('获取失败，请重试')
+              } finally {
+                this.loading = false  // 数据加载成功后设置loading为false
+              }
+             
+
+            },
+
+
+            // 加载章节内容
+         async   loadChapterContent(id) {
+              debugger
+              this.loading = true
+             
+              try {
+                const response = await axios.get(`http://localhost:8899/download/getChapterInfo`, {
+                  params: { chapterId: id}
+                })
+                if(response.data.data !=undefined ){
+                
+                  const chapterData = response.data.data;
+                    this.description = chapterData.chaptName;
+                      this.currentChapter = {
+                            title: chapterData.chaptName,
+                            content: chapterData.context
+                          }         
+
+                      this. currentChapterTitle =  chapterData.title
+                        // 将内容按段落拆分
+                      this.paragraphs = chapterData.context.split('\n\n').filter(p => p.trim())
+                }
+                this.loading = false  // 数据加载成功后设置loading为false
+              } catch (error) {
+                console.error(error)
+                this.$message.error('获取失败，请重试')
+              } finally {
+                this.loading = false  // 数据加载成功后设置loading为false
+              }
+            },
+
+
+          
+          // 打开设置
+          openSettings() {
+            this.settingsDialogVisible = true
+          },
+          
+
+          
+          // 打开章节列表
+          openChapterList() {
+            this.chapterListVisible = true
+          },
+          
+          // 选择章节
+          selectChapter(index) {
+            this.currentChapterIndex = parseInt(index)
+            this.chapterListVisible = false
+            this.scrollToTop()
+          },
+          
+          // 处理章节列表关闭
+          handleChapterListClose(done) {
+            this.chapterListVisible = false
+            done()
+          },
+          // 滚动到顶部
+          scrollToTop() {
+            this.$nextTick(() => {
+              const content = this.$refs.content
+              if (content) {
+                content.scrollTop = 0
+              }
+            })
+          },
+
+    },
+
+    watch: {
+  // 监听路由变化
+       '$route': 'loadChapter'
+    },
+    computed: {
+
+    
+    // 内容段落分割
+    paragraphs() {
+      if (!this.currentChapter.content) return []
+      return this.currentChapter.content.split('\n').filter(p => p.trim())
+    },
+
+  },
+    
+ async mounted() {
+
+    this.loading = true;
+    try {
+      await this.loadNovelInfo();
+    } finally {
+      this.loading = false;
+    }
+
+    // 记录阅读历史
+    this.$nextTick(() => {
+      this.scrollToTop()
+    })
+  },
+    created() {
+    // 获取 query 参数
+    this.bookName = this.$route.query.bookName;
+    this.bookId = this.$route.query.bookId;
+
+  },
+  }
+</script>
+
 <style scoped>
+
 .header-right {
   display: flex;
   align-items: center;
@@ -113,14 +312,10 @@ export default {
 .cursor-pointer {
   cursor: pointer;
 }
-.home-container {
 
- height: calc(100vh - 20px); 
- background: linear-gradient(135deg, #fdfdfd, #edf2f7);
-}
 
   .el-menu-vertical-demo:not(.el-menu--collapse) {
-    width: 200px;
+    width: 260px;
     min-height: 400px;
   }
 
@@ -147,7 +342,7 @@ export default {
 }
 
 .main-content {
-  padding: 20px;
+  padding: 7px;
   background-color: #fdfdfd;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -180,7 +375,7 @@ export default {
 
 
 .reading-container {
-  height: 96%;
+  height: 76%;
   padding: 20px;
   overflow-y: auto;
   transition: all 0.3s;
@@ -193,7 +388,7 @@ export default {
 }
 
 .chapter-content {
-  max-width: 800px;
+  max-width: 100%;
   margin: 0 auto;
 }
 
@@ -249,217 +444,24 @@ export default {
   }
 }
 
-</style>
+.home-container {
+  height: 97vh; /* 整个容器占满视口高度 */
+  overflow: hidden; /* 防止 body 出现滚动条 */
+}
 
-<script>
-import axios from 'axios';
+.sidebar-container {
+  /* 侧边栏容器本身不需要滚动，但需限制高度 */
+  height: 100%;
+  overflow: hidden;
+}
 
-  export default {
-    props: ['id'], 
-    data() {
-      return {
-        isCollapse: false,
-        bookName:"",
-        bookUrl:"",
-        author: '',
-        updateTime: '',
-        description: '这个是简介',
-
-       menuList: [
-        { index: '1', title: '章节1', icon: 'el-icon-s-order',path: '/OnlineRead/1'},
-        { index: '2', title: '章节2', icon: 'el-icon-s-order' ,path: '/OnlineRead/2'},
-        { index: '3', title: '章节3', icon: 'el-icon-s-order' ,path: '/OnlineRead/3'}
-        
-      ],
-      
-      // 章节列表
-      chapters: [
-        { id: 1, title: '第一章 开始', content: '这是第一章的垃圾什的；来看是' },
-        { id: 2, title: '第二章 发展', content: '这是第二章的内容...' },
-        { id: 3, title: '第三章 高潮', content: '这是第三章的内容...' },
-        { id: 4, title: '第三章 高潮1', content: '这是第三章的内容...' }
-      ],
-      
-      // 当前章节索引
-      currentChapterIndex: 0,
-      
-      currentChapterTitle:"",
-      currentChapter:{},
-      // 阅读设置
-      settings: {
-        fontSize: 16,
-        lineHeight: '1.6',
-        bgColor: '#ffffff',
-        textColor: '#000000'
-      },
-      
-      // 对话框控制
-      settingsDialogVisible: false,
-      chapterListVisible: false
-              
- 
-      };
-    },
-    methods: {
-            showNoteInfo(book) {
-              this.$message.success(`展示加入书架的书`)
-            },
-            handleOpen(key, keyPath) {
-              console.log(key, keyPath);
-            },
-            handleClose(key, keyPath) {
-              console.log(key, keyPath);
-            },
+.el-menu-vertical-demo {
+  height: 100%; /* 占满侧边栏高度 */
+  overflow-y: auto; /* 超出时滚动 */
+  border-right: none;
+}
 
 
-            async loadNovelInfo() {
-    
-              this.loading = true
-
-              try {
-                const response = await axios.get(`http://localhost:8860/store/getMenuInfo`, {
-                  params: { name: this.bookName ,url: this.bookUrl},
-                  headers: {
-                              'Accept': 'application/json', // 明确指定接受JSON格式
-                              'Content-Type': 'application/json'
-                          }
-                })
-                
-                this.author = response.data.data.author || []
-                this.updateTime = response.data.data.lastTime || []
-                this.description = response.data.data.details || []
-              
-                this.loading = false  // 数据加载成功后设置loading为false
-              } catch (error) {
-                console.error(error)
-                this.$message.error('获取失败，请重试')
-              } finally {
-                this.loading = false  // 数据加载成功后设置loading为false
-              }
-              this.currentPage = 1
-
-      },
-
-
-
-            loadChapter() {
-              
-              const chapterId = this.$route.params.id  // 假设路由是 /chapter/:id
-
-              // 模拟从数据源获取章节内容（可以是 API、本地数据等）
-              const chapterData = this.getChapterById(chapterId)
-
-              if (chapterData) {
-                this.currentChapter = {
-                  title: chapterData.title,
-                  content: chapterData.content
-                }
-               this. currentChapterTitle =  chapterData.title
-                // 将内容按段落拆分
-                // this.paragraphs = chapterData.content.split('\n\n').filter(p => p.trim())
-              }
-            },
-
-            getChapterById(id) {
-              // 示例：本地模拟数据
-              const chapters = {
-                '1': {
-                  title: '第一章：初入江湖',
-                  content: '这是一个关于少年侠客的故事。\n\n他背负长剑，行走江湖。\n\n路见不平，拔刀相助。'
-                },
-                '2': {
-                  title: '第二章：风云再起',
-                  content: '江湖再起波澜。\n\n各大门派齐聚华山。\n\n一场大战一触即发。'
-                }
-              }
-              return chapters[id]
-            },
-
-            beginDownLoad() {
-              // 开始下载
-             
-            },
-
-          
-          // 打开设置
-          openSettings() {
-            this.settingsDialogVisible = true
-          },
-          
-
-          
-          // 打开章节列表
-          openChapterList() {
-            this.chapterListVisible = true
-          },
-          
-          // 选择章节
-          selectChapter(index) {
-            this.currentChapterIndex = parseInt(index)
-            this.chapterListVisible = false
-            this.scrollToTop()
-          },
-          
-          // 处理章节列表关闭
-          handleChapterListClose(done) {
-            this.chapterListVisible = false
-            done()
-          },
-          // 滚动到顶部
-          scrollToTop() {
-            this.$nextTick(() => {
-              const content = this.$refs.content
-              if (content) {
-                content.scrollTop = 0
-              }
-            })
-          },
-
-    },
-
-    watch: {
-  // 监听路由变化
-       '$route': 'loadChapter'
-    },
-    computed: {
-
-    
-    // 内容段落分割
-    paragraphs() {
-      if (!this.currentChapter.content) return []
-      return this.currentChapter.content.split('\n').filter(p => p.trim())
-    },
-        // 加载章节内容（模拟API调用）
-    loadChapterContent(chapterId) {
-      // 这里可以调用API获取章节内容
-      console.log('加载章节:', chapterId)
-    }
-  },
-    
- async mounted() {
-
-    this.loading = true;
-    try {
-      await this.loadNovelInfo();
-    } finally {
-      this.loading = false;
-    }
-
-    // 记录阅读历史
-    this.$nextTick(() => {
-      this.scrollToTop()
-    })
-  },
-    created() {
-    // 获取 query 参数
-    this.bookName = this.$route.query.bookName;
-    this.bookUrl = this.$route.query.bookUrl;
-
-  },
-  }
-</script>
-
-<style scoped>
 .query-container {
   height: 100%;
   display: flex;
