@@ -27,7 +27,7 @@
         </el-menu-item>
 
 
-        <el-menu-item index="3" disabled>
+        <el-menu-item index="/mixDetail" >
             <i class="el-icon-document"></i>
             <span slot="title">待定</span>
         </el-menu-item>

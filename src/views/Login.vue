@@ -1,42 +1,110 @@
 <template>
   <div class="login-container">
-    <div class="login-card">
-      <h2 class="login-title">欢迎登录</h2>
-      <form @submit.prevent="handleLogin">
-        <div class="form-group">
-          
-          <input type="text" id="username" v-model="form.username" placeholder="请输入用户名" required />
-        </div>
-        <div class="form-group">
-          
-          <input type="password" id="password" v-model="form.password" placeholder="请输入密码" required />
-        </div>
-        <button type="submit" class="login-button">登录</button>
-      </form>
-    </div>
+    <el-card class="login-card">
+      <div slot="header" class="login-header">
+        <h2>用户登录</h2>
+      </div>
+      <el-form
+        :model="form"
+        :rules="rules"
+        ref="loginForm"
+        @submit.native.prevent="handleSubmit"
+        label-width="0px"
+        class="login-form"
+      >
+        <el-form-item prop="username">
+          <el-input
+            v-model="form.username"
+            placeholder="请输入用户名"
+            prefix-icon="el-icon-user"
+          ></el-input>
+        </el-form-item>
+
+        <el-form-item prop="password">
+          <el-input
+            v-model="form.password"
+            type="password"
+            placeholder="请输入密码"
+            prefix-icon="el-icon-lock"
+            show-password
+          ></el-input>
+        </el-form-item>
+
+        <el-form-item>
+          <el-button
+            type="primary"
+            class="login-button"
+            @click="handleSubmit"
+            :loading="loading"
+            style="width: 100%"
+          >
+            登录
+          </el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
   </div>
 </template>
 
 <script>
+
+import { ref } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { ElMessage } from 'element-plus';
+// 方式1：直接导入具体 API
+import { loginAPI } from '@/api/auth';
+
+
+
 export default {
   name: 'Login',
   data() {
     return {
+      loading: false,
       form: {
         username: '',
         password: ''
+      },
+      rules: {
+        username: [
+          { required: true, message: '请输入用户名', trigger: 'blur' }
+        ],
+        password: [
+          { required: true, message: '请输入密码', trigger: 'blur' },
+          { min: 6, message: '密码至少6位', trigger: 'blur' }
+        ]
       }
-    };
+    }
   },
   methods: {
-    handleLogin() {
-      // 这里可以调用登录接口
-      console.log('提交登录:', this.form);
-      // 模拟跳转
-      this.$router.push('/');
+
+
+
+    handleSubmit() {
+      this.$refs.loginForm.validate(async valid => {
+        if (valid) {
+          this.loading = true;
+
+            // 调用封装好的 API
+            const res = await loginAPI(this.form)
+            
+            // 假设后端返回 { token, userInfo }
+            localStorage.setItem('token', res.token)
+            
+            // 跳转
+            const redirect = route.query.redirect || '/currentHot'
+            router.push(redirect)
+            
+            ElMessage.success('登录成功！')
+
+
+        } else {
+          return false;
+        }
+      });
     }
   }
-};
+}
 </script>
 
 <style scoped>
@@ -44,67 +112,27 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  background-color: #f0f2f5;
 }
 
 .login-card {
-  background: #fff;
-  padding: 30px 40px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 400px;
+  width: 400px;
+  max-width: 90%;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.login-title {
-  margin-bottom: 20px;
-  font-size: 24px;
-  color: #333;
+.login-header {
   text-align: center;
-}
-
-.form-group {
   margin-bottom: 20px;
 }
 
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #555;
-  font-weight: 500;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 10px 15px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
-  outline: none;
-  transition: 0.3s;
-}
-
-.form-group input:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 5px rgba(102, 126, 234, 0.5);
+.login-form {
+  padding: 20px 40px;
 }
 
 .login-button {
-  width: 100%;
-  padding: 12px;
-  background-color: #667eea;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.login-button:hover {
-  background-color: #5a67d8;
+  margin-top: 10px;
 }
 </style>
