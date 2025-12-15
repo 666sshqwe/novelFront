@@ -2,20 +2,20 @@
 import request from '@/api/request'
 
 /**
- * ÓÃ»§µÇÂ¼
+ * ç”¨æˆ·ç™»å½•
  * @param {Object} loginData - { username, password }
- * @returns {Promise} - ·µ»Ø token µÈĞÅÏ¢
+ * @returns {Promise} - è¿”å› token ç­‰ä¿¡æ¯
  */
 export function loginAPI(loginData) {
   return request({
-    url: '/auth/login',
+    url: '/auther/login',
     method: 'post',
-     loginData
+    data: loginData 
   })
 }
 
 /**
- * »ñÈ¡ÓÃ»§ĞÅÏ¢£¨¿ÉÑ¡£©
+ * è·å–ç”¨æˆ·ä¿¡æ¯ï¼ˆå¯é€‰ï¼‰
  */
 export function getUserInfoAPI() {
   return request({
@@ -25,11 +25,11 @@ export function getUserInfoAPI() {
 }
 
 /**
- * ÓÃ»§µÇ³ö
+ * ç”¨æˆ·ç™»å‡º
  */
 export function logoutAPI() {
   return request({
-    url: '/auth/logout',
+    url: '/auther/logout',
     method: 'post'
   })
 }

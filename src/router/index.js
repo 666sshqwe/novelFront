@@ -1,7 +1,6 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import HomeView from '../components/Home.vue';
-import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/Login.vue'
 import OnlieRead from '../views/OnlieRead.vue'
 import NovelMenus from '../views/NovelMenus.vue'
@@ -68,8 +67,8 @@ const routes = [
     }
 ]
 
-const router = createRouter({
-  history: createWebHistory(),
+const router = new VueRouter({
+  mode: 'history', 
   routes
 })
 
@@ -77,8 +76,7 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   // 从 localStorage 或 store 中获取 token
   const token = localStorage.getItem('token') 
-    || sessionStorage.getItem('token')
-    || store.getters.token; // 根据你的状态管理方式调整
+    || sessionStorage.getItem('token'); // 根据你的状态管理方式调整
 
   // 检查目标路由是否需要认证
   if (to.matched.some(record => record.meta.requiresAuth)) {

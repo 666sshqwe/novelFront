@@ -1,19 +1,22 @@
 // src/api/request.js
 import axios from 'axios'
+import { Message } from 'element-ui'
 
-// ´´½¨ axios ÊµÀı
+console.log('Gateway URL:', process.env.VUE_APP_GATEWAY_URL) // æ·»åŠ è¿™è¡Œ
+
+// åˆ›å»º axios å®ä¾‹
 const request = axios.create({
-  baseURL: process.env.VUE_APP_API_BASE_URL || '/api', // ´Ó .env ¶ÁÈ¡
+  baseURL: process.env.VUE_APP_GATEWAY_URL || '/api', // ä» .env è¯»å–
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
   }
 })
 
-// ÇëÇóÀ¹½ØÆ÷
+// è¯·æ±‚æ‹¦æˆªå™¨
 request.interceptors.request.use(
   config => {
-    // ´Ó localStorage »ñÈ¡ token ²¢Ìí¼Óµ½ÇëÇóÍ·
+    // ä» localStorage è·å– token å¹¶æ·»åŠ åˆ°è¯·æ±‚å¤´
     const token = localStorage.getItem('token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
@@ -25,27 +28,27 @@ request.interceptors.request.use(
   }
 )
 
-// ÏìÓ¦À¹½ØÆ÷
+// å“åº”æ‹¦æˆªå™¨
 request.interceptors.response.use(
   response => {
-    // ¸ù¾İºó¶Ë·µ»Ø¸ñÊ½µ÷Õû£¬¼ÙÉèÄãµÄºó¶Ë·µ»Ø { code, data, message }
+    // æ ¹æ®åç«¯è¿”å›æ ¼å¼è°ƒæ•´ï¼Œå‡è®¾ä½ çš„åç«¯è¿”å› { code, data, message }
     const { code, data, message } = response.data
     
     if (code === 200) {
-      return data // Ö±½Ó·µ»ØÒµÎñÊı¾İ
+      return response.data // ç›´æ¥è¿”å›ä¸šåŠ¡æ•°æ®
     } else {
-      // Element UI ÏûÏ¢ÌáÊ¾£¨ÄãÏîÄ¿ÓÃÁË ElementUI£©
-      ElMessage.error(message || 'ÇëÇóÊ§°Ü')
+      // Element UI æ¶ˆæ¯æç¤ºï¼ˆä½ é¡¹ç›®ç”¨äº† ElementUIï¼‰
+      Message.error(message || 'è¯·æ±‚å¤±è´¥')
       return Promise.reject(new Error(message))
     }
   },
   error => {
     if (error.response?.status === 401) {
-      // token ¹ıÆÚ»òÎŞĞ§£¬Ìø×ªµÇÂ¼
+      // token è¿‡æœŸæˆ–æ— æ•ˆï¼Œè·³è½¬ç™»å½•
       localStorage.removeItem('token')
       window.location.href = '/login'
     }
-    ElMessage.error(error.message || 'ÍøÂç´íÎó')
+    Message.error(error.message || 'ç½‘ç»œé”™è¯¯')
     return Promise.reject(error)
   }
 )

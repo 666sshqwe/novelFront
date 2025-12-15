@@ -50,7 +50,7 @@
 
 import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { ElMessage } from 'element-plus';
+
 // 方式1：直接导入具体 API
 import { loginAPI } from '@/api/auth';
 
@@ -89,13 +89,14 @@ export default {
             const res = await loginAPI(this.form)
             
             // 假设后端返回 { token, userInfo }
-            localStorage.setItem('token', res.token)
+            localStorage.setItem('token', res.data)
+            
             
             // 跳转
-            const redirect = route.query.redirect || '/currentHot'
-            router.push(redirect)
-            
-            ElMessage.success('登录成功！')
+            const redirect = this.$route.query.redirect || '/currentHot'
+            this.$router.push(redirect)
+
+            this.$message.success('登录成功！')
 
 
         } else {

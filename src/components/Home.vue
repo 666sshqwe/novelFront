@@ -63,14 +63,21 @@
           </el-breadcrumb>
         </div>
         <div class="header-right">
-              <span class="note-info" @click="showNoteInfo()">
-                    <i class="el-icon-notebook-1" style="font-size: 24px;"></i>
+              <span class="note-info">
+                    <i class="el-icon-user-solid" style="font-size: 18px;"></i>
               </span>
+              <el-dropdown @command="handleCommand">
+                  <span class="el-dropdown-link">
+                    管理员<i class="el-icon-arrow-down el-icon--right"></i>
+                  </span>
+                  <el-dropdown-menu slot="dropdown">
+                    <el-dropdown-item command="selfInfo">个人中心</el-dropdown-item>
+                    <el-dropdown-item command="logout">登出</el-dropdown-item>
+                    
+                  </el-dropdown-menu>
+              </el-dropdown>  
 
-              <div class="user-info">
-                <el-avatar icon="el-icon-user-solid"></el-avatar>
-                <span class="username">管理员</span>
-              </div>
+          
       </div>
       </el-header>
 
@@ -89,6 +96,14 @@ export default {
 </script>
 
 <style scoped>
+
+  .el-dropdown-link {
+    cursor: pointer;
+    color: #409EFF;
+  }
+  .el-icon-arrow-down {
+    font-size: 12px;
+  }
 
 .cursor-pointer {
   cursor: pointer;
@@ -189,9 +204,21 @@ export default {
         console.log(key, keyPath);
       },
 
-    showNoteInfo(book) {
-      this.$message.success(`展示加入书架的书`)
-    }
+      handleCommand(command) {
+        if(command === 'logout') {
+          // 清除本地存储的 token
+          localStorage.removeItem('token');
+          // 跳转到登录页
+          this.$router.push('/login');
+        } else if(command === 'selfInfo') {
+          // 跳转到个人信息页
+          // 暂时测试清楚掉token之后的处理
+           localStorage.removeItem('token');
+
+          // this.$router.push('/login');
+
+        }
+      }
     }
   }
 </script>

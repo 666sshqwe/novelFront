@@ -103,6 +103,8 @@
 <script>
 
 import axios from 'axios';
+import { searchHotList } from '@/api/search';
+import { addToWaitDownLoad } from '@/api/download';
 
 export default {
   data() {
@@ -138,14 +140,11 @@ export default {
       this.loading = true
 
       try {
-        const response = await axios.get(`http://localhost:8860/store/searchHotList`, {
-          headers: {
-                      'Accept': 'application/json', // 明确指定接受JSON格式
-                      'Content-Type': 'application/json'
-                  }
-        })
+
+        const res = await searchHotList()
         
-        this.books = response.data.data || []
+
+        this.books = res.data || []
       
          this.loading = false  // 数据加载成功后设置loading为false
       } catch (error) {
@@ -176,28 +175,23 @@ export default {
     },
 
     // 加入下载列表
-    addToShelf(book) {
-       axios.post('http://localhost:8899/waitDownLoad/joinToDownload', {
-        param:[
-          {
-            bookName: book.bookName,
-            bookUrl: book.booklUrl,
-            bookAuthor:book.bookAuthor
-          }
-        ]
+    async  addToShelf(book) {
 
-      })
-      .then(res => {
+      const res = await addToWaitDownLoad({
+          novel:[
+            {
+              bookName: book.bookName,
+              bookUrl: book.booklUrl,
+              bookAuthor:book.bookAuthor
+            }
+          ]})
 
-         this.$message.success(`已将《${book.bookName}》加入书架`)
-        console.log(res.data)
+      if(res.code === 200){
+          this.$message.success(`已将《${book.bookName}》加入下载列表`)
+      }
 
-      })
-      .catch(err => {
-        console.error(err)
-
-      })
     }
+
   }
 }
 </script>
