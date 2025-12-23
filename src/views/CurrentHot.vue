@@ -177,14 +177,7 @@ export default {
     // 加入下载列表
     async  addToShelf(book) {
 
-      const res = await addToWaitDownLoad({
-          novel:[
-            {
-              bookName: book.bookName,
-              bookUrl: book.booklUrl,
-              bookAuthor:book.bookAuthor
-            }
-          ]})
+      const res = await joinToDownload(book)
 
       if(res.code === 200){
           this.$message.success(`已将《${book.bookName}》加入下载列表`)

@@ -114,6 +114,8 @@
 <script>
 
 import axios from 'axios';
+import { queryFromWaitDownLoad,toDownLoad } from '@/api/download';
+
 export default {
   name: 'DownloadPage',
   data() {
@@ -128,7 +130,7 @@ export default {
     async mounted() {
     this.loading = true;
     try {
-      await this.findWholeNovel();
+      await this.handleSearch();
     } finally {
       this.loading = false;
     }
@@ -147,24 +149,7 @@ export default {
 
       // 加入下载队列开始下载
      addToDownLoad(book) {
-       axios.post('http://localhost:8899/download/downloadByTask', {
-        novel:[
-          {
-            id: book.id,
-            bookName: book.novelName,
-            bookUrl: book.url,
-            bookAuthor:book.auther
-          }
-        ]
-
-      })
-      .then(res => {
-
-      })
-      .catch(err => {
-        console.error(err)
-
-      })
+      const response = toDownLoad(book);
     },
       
     // 从待下载中搜索 
@@ -172,18 +157,12 @@ export default {
       const key = this.searchKey.trim()
       this.loading = true
       try {
-        const response = await axios.get(`http://localhost:8899/waitDownLoad/queryWaitDownLoad`, {
-          params: { bookName: key },
-          headers: {
-                      'Accept': 'application/json', // 明确指定接受JSON格式
-                      'Content-Type': 'application/json'
-                  }
-        })
-        
-        this.books = response.data.data || []
-      
+        const response = await queryFromWaitDownLoad(key);
+         this.books = response.data || []
          this.loading = false  // 数据加载成功后设置loading为false
+
       } catch (error) {
+         console.error("从待下载缓存中下载失败======》")
         console.error(error)
         this.$message.error('搜索失败，请重试')
       } finally {
@@ -193,27 +172,7 @@ export default {
 
     },
 
-    // 搜索所有的小说
-    async findWholeNovel() {
-      this.loading = true
-      try {
-        const response = await axios.get(`http://localhost:8899/waitDownLoad/queryWaitDownLoad`, {
-           params: { bookName: "" }
-        })
-        
-        this.books = response.data.data || []
-      
-         this.loading = false  // 数据加载成功后设置loading为false
-      } catch (error) {
-        console.error(error)
-        this.$message.error('搜索失败，请重试')
-      } finally {
-         this.loading = false  // 数据加载成功后设置loading为false
-      }
-      this.currentPage = 1
-
-    },
-        handleCurrentChange(val) {
+     handleCurrentChange(val) {
       this.currentPage = val
     },
     handleSizeChange(val) {

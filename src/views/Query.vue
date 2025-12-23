@@ -108,6 +108,8 @@
 <script>
 
 import axios from 'axios';
+import { onlineSearch } from '@/api/search';
+import { joinToDownload } from '@/api/download';
 
 export default {
   data() {
@@ -140,15 +142,9 @@ export default {
       this.loading = true
 
       try {
-        const response = await axios.get(`http://localhost:8860/store/searchByOnlie`, {
-          params: { keyword: key },
-          headers: {
-                      'Accept': 'application/json', // 明确指定接受JSON格式
-                      'Content-Type': 'application/json'
-                  }
-        })
+        const response = await onlineSearch(key)
         
-        this.books = response.data.data || []
+        this.books = response.data || []
       
          this.loading = false  // 数据加载成功后设置loading为false
       } catch (error) {
@@ -179,27 +175,12 @@ export default {
     },
 
     // 加入下载列表
-    addToShelf(book) {
-       axios.post('http://localhost:8899/waitDownLoad/joinToDownload', {
-        novel:[
-          {
-            bookName: book.novelName,
-            bookUrl: book.url,
-            bookAuthor:book.auther
-          }
-        ]
+   async addToShelf(book) {
+      const res = await joinToDownload(book)
 
-      })
-      .then(res => {
-
-         this.$message.success(`已将《${book.bookName}》加入书架`)
-        console.log(res.data)
-
-      })
-      .catch(err => {
-        console.error(err)
-
-      })
+      if(res.code === 200){
+          this.$message.success(`已将《${book.novelName}》加入下载列表`)
+      }
     }
   }
 }

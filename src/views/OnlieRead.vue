@@ -4,18 +4,19 @@
   <!-- 侧边栏 -->
   <el-aside :width="isCollapse ? '64px' : '260px'" class="sidebar-container">
     <el-menu
-      default-active="1-4-1"
+      ref="sideMenu"
+      active-text-color="#409EFF"
+      :default-active="currentMenu"
       class="el-menu-vertical-demo"
       @open="handleOpen"
       @close="handleClose"
       :collapse="isCollapse"
-      router
       :unique-opened="true"
     >
       <el-menu-item
         v-for="item in menuList"
-        :key="item.index"
-        :index="item.path"
+        :key="item.id"
+        :index="item.bookIndex"
         @click="handleMenuItemClick(item)"
       >
         <i :class="item.icon"></i>
@@ -68,6 +69,7 @@
         </div>
 
       <div 
+       ref="scrollContainer"
         class="reading-container" 
         :style="{
           fontSize: settings.fontSize + 'px',
@@ -107,6 +109,7 @@ import axios from 'axios';
     props: ['id'], 
     data() {
       return {
+        paragraphs: [],
         isCollapse: false,
         bookName:"",
         bookUrl:"",
@@ -115,7 +118,8 @@ import axios from 'axios';
         updateTime: '',
         description: '',
         menuList: [],
-      
+        currentMenu: "",
+        savedScrollTop: 0,
       
       // 当前章节索引
       currentChapterIndex: 0,
@@ -141,18 +145,34 @@ import axios from 'axios';
             showNoteInfo(book) {
               this.$message.success(`展示加入书架的书`)
             },
+
+            // 菜单项中子菜单点击打开回调事件
             handleOpen(key, keyPath) {
               console.log(key, keyPath);
             },
+
+            // 菜单项中子菜单点击关闭回调事件
             handleClose(key, keyPath) {
               console.log(key, keyPath);
             },
+
+            // 菜单项中子菜单点击事件
             handleMenuItemClick(item) {
               const chapterId = item.id;
               this.loadChapterContent(chapterId);
-          
+              this.currentMenu = item.bookIndex;
+              this.scrollToTop();
             },
 
+             // 滚动到顶部
+            scrollToTop() {
+              const container = this.$refs.scrollContainer;
+              if (container) {
+                container.scrollTop = 0;
+              }
+            },
+
+            // 页面打开时调用,加载小说信息和章节列表
             async loadNovelInfo() {
               this.loading = true
               try {
@@ -172,6 +192,7 @@ import axios from 'axios';
                       title: chapter.chaptName,
                       order: chapter.chapterOrder,
                       downloadId: chapter.downloadId,
+                      bookIndex:  chapter.chaptName+"-"+chapter.chapterOrder,
                       icon: 'el-icon-s-order'
                     })
                   })
@@ -189,9 +210,9 @@ import axios from 'axios';
             },
 
 
-            // 加载章节内容
+            // 加载对应的章节内容
          async   loadChapterContent(id) {
-              debugger
+              
               this.loading = true
              
               try {
@@ -209,7 +230,7 @@ import axios from 'axios';
 
                       this. currentChapterTitle =  chapterData.title
                         // 将内容按段落拆分
-                      this.paragraphs = chapterData.context.split('\n\n').filter(p => p.trim())
+                      this.paragraphs = chapterData.context.split('\r\n').filter(p => p.trim())
                 }
                 this.loading = false  // 数据加载成功后设置loading为false
               } catch (error) {
@@ -222,77 +243,76 @@ import axios from 'axios';
 
 
           
-          // 打开设置
-          openSettings() {
-            this.settingsDialogVisible = true
-          },
+            // 打开设置
+            openSettings() {
+              this.settingsDialogVisible = true
+            },
           
 
           
-          // 打开章节列表
-          openChapterList() {
-            this.chapterListVisible = true
-          },
+            // 打开章节列表
+            openChapterList() {
+              this.chapterListVisible = true
+            },
+            
+            // 选择章节
+            selectChapter(index) {
+              this.currentChapterIndex = parseInt(index)
+              this.chapterListVisible = false
+              this.scrollToTop()
+            },
           
-          // 选择章节
-          selectChapter(index) {
-            this.currentChapterIndex = parseInt(index)
-            this.chapterListVisible = false
-            this.scrollToTop()
-          },
-          
-          // 处理章节列表关闭
-          handleChapterListClose(done) {
-            this.chapterListVisible = false
-            done()
-          },
-          // 滚动到顶部
-          scrollToTop() {
-            this.$nextTick(() => {
-              const content = this.$refs.content
-              if (content) {
-                content.scrollTop = 0
-              }
-            })
-          },
+
+
 
     },
 
     watch: {
-  // 监听路由变化
-       '$route': 'loadChapter'
+
+        isCollapse(newVal) {
+          if (newVal) {
+            // 即将收起 → 保存当前滚动位置
+            this.savedScrollTop = this.$refs.sideMenu?.$el?.scrollTop || 0;
+            
+          } else {
+
+            // 展开后，延迟 3 秒恢复滚动位置（不推荐，但可行）
+            setTimeout(() => {
+              if (this.$refs.sideMenu) {
+                this.$refs.sideMenu.$el.scrollTop = this.savedScrollTop;
+              }
+            }, 500);
+          }
+        },
+
     },
     computed: {
 
     
-    // 内容段落分割
-    paragraphs() {
-      if (!this.currentChapter.content) return []
-      return this.currentChapter.content.split('\n').filter(p => p.trim())
+
+
     },
-
-  },
     
- async mounted() {
+    async mounted() {
 
-    this.loading = true;
-    try {
-      await this.loadNovelInfo();
-    } finally {
-      this.loading = false;
-    }
+        this.loading = true;
+        try {
+          await this.loadNovelInfo();
+        } finally {
+          this.loading = false;
+        }
 
-    // 记录阅读历史
-    this.$nextTick(() => {
-      this.scrollToTop()
-    })
-  },
+        // 记录阅读历史
+        this.$nextTick(() => {
+          this.scrollToTop()
+        })
+      },
     created() {
-    // 获取 query 参数
-    this.bookName = this.$route.query.bookName;
-    this.bookId = this.$route.query.bookId;
+      // 获取 query 参数
+      this.bookName = this.$route.query.bookName;
+      this.bookId = this.$route.query.bookId;
 
-  },
+    },
   }
 </script>
 
@@ -452,7 +472,7 @@ import axios from 'axios';
 .sidebar-container {
   /* 侧边栏容器本身不需要滚动，但需限制高度 */
   height: 100%;
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 .el-menu-vertical-demo {
